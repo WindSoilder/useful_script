@@ -25,21 +25,21 @@ def drop_mongo_duplicate(collection, keys, bulk_size=None):
         # for better performance
         drop_mongo_duplicate(exchange_information, ('stock_id', 'date'), bulk_size=1024)"""
     def _extract_condition(record):
-        condition = {key: value for key, value in record['_id']}
+        condition = {key: value for key, value in record['_id'].items()}
         unique_id = collection.find_one(condition, {'_id': 1})['_id']
         condition['_id'] = {'$ne': unique_id}
         return condition
 
     def _drop_in_bulk():
         op_buffer = []
-        for res in resutls:
+        for res in results:
             condition = _extract_condition(res)
             if len(op_buffer) == bulk_size:
                 collection.bulk_write(op_buffer)
                 op_buffer = []
 
     def _drop_one_by_one():
-        for res in resutls:
+        for res in results:
             condition = _extract_condition(res)
             collection.delete_many(condition)
 
