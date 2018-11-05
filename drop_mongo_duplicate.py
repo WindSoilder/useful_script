@@ -37,6 +37,8 @@ def drop_mongo_duplicate(collection, keys, bulk_size=None):
             if len(op_buffer) == bulk_size:
                 collection.bulk_write(op_buffer)
                 op_buffer = []
+            else:
+                op_buffer.append(DeleteMany(condition))
 
     def _drop_one_by_one():
         for res in results:
