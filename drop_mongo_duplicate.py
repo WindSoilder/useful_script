@@ -39,6 +39,9 @@ def drop_mongo_duplicate(collection, keys, bulk_size=None):
                 op_buffer = []
             else:
                 op_buffer.append(DeleteMany(condition))
+        # do operations on remain data
+        if op_buffer:
+            collection.bulk_write(op_buffer)
 
     def _drop_one_by_one():
         for res in results:
