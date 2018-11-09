@@ -6,7 +6,7 @@ from bson import ObjectId
 from pymongo import DeleteMany
 
 
-def drop_mongo_duplicate(collection, keys, bulk_size=None):
+def drop_mongo_duplicate(collection, keys, restricted=None, bulk_size=None):
     """ drop mongodb duplicate documents inside keys
     WARNING: You need to assure that the keys is index field in the collection, or this function's
     performance is un-acceptable.
@@ -15,6 +15,7 @@ def drop_mongo_duplicate(collection, keys, bulk_size=None):
     Args:
         collection (pymongo.collection.Collection): The collection you want to drop duplicate content
         keys (list of str): The keys which you consider should be unique in the collection
+        restricted (str or None): mongo query string, which can let you restrict the documents set
         bulk_size (int or None): when the parameter is None, the function will send `bulk_size` requests to mongo once
 
     For example:
@@ -23,7 +24,11 @@ def drop_mongo_duplicate(collection, keys, bulk_size=None):
         drop_mongo_duplicate(exchange_information, ('stock_id', 'date'))
 
         # for better performance
-        drop_mongo_duplicate(exchange_information, ('stock_id', 'date'), bulk_size=1024)"""
+        drop_mongo_duplicate(exchange_information, ('stock_id', 'date'), bulk_size=1024)
+
+        # if you want to drop duplicate date which is later than 2018-01-01
+        drop_mongo_duplicate(exchange_information, ('stock_id', 'date'), {'date': {'$gt': datetime.datetime(2018, 1, 1)}}, bulk_size=1024)
+        """
     def _extract_condition(record):
         condition = {key: value for key, value in record['_id'].items()}
         unique_id = collection.find_one(condition, {'_id': 1})['_id']
@@ -50,16 +55,27 @@ def drop_mongo_duplicate(collection, keys, bulk_size=None):
 
     # Duplicates considered as count greater than one
     DUPLICATE_NUMBER = 1
-    # the collection may be too huge to aggregate, for this situration, we need to parse
+    # the collection may be too huge to aggregate, for this situation, we need to parse
     # `allowDiskUse=True` to mongo server.
-    results = collection.aggregate([
-        {
+    if restricted:
+        results = collection.aggregate([
+            {'$match': restricted},
+            {
+                '$group': {
+                    '_id': {k: f'${k}' for k in keys},
+                    'total': {'$sum': 1}
+                }
+            },
+            {'$match': {'total': {'$gt': DUPLICATE_NUMBER}}}], allowDiskUse=True)
+    else:
+        results = collection.aggregate([
+            {
             '$group': {
                 '_id': {k: f'${k}' for k in keys},
                 'total': {'$sum': 1}
             }
-        },
-        {'$match': {'total': {'$gt': DUPLICATE_NUMBER}}}], allowDiskUse=True)
+            },
+            {'$match': {'total': {'$gt': DUPLICATE_NUMBER}}}], allowDiskUse=True)
 
     if bulk_size:
         _drop_in_bulk()
