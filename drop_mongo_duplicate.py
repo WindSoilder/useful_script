@@ -1,8 +1,3 @@
-import datetime
-import pymongo
-import pandas as pd
-import collections
-from bson import ObjectId
 from pymongo import DeleteMany
 
 
