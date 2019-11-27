@@ -1,19 +1,21 @@
+from typing import List, Optional
 from pymongo import DeleteMany
+from pymongo.collection import Collection
 
 
-def drop_mongo_duplicate(collection, keys, restricted=None, bulk_size=None):
+def drop_mongo_duplicate(collection: Collection, keys: List[str], restricted: Optional[str] = None, bulk_size: Optional[int] = None):
     """ drop mongodb duplicate documents inside keys
     WARNING: You need to assure that the keys is index field in the collection, or this function's
     performance is un-acceptable.
     PLEASE NOTE THAT IT WILL DELETE DATA IN THE COLLECTION!
 
     Args:
-        collection (pymongo.collection.Collection): The collection you want to drop duplicate content
-        keys (list of str): The keys which you consider should be unique in the collection
-        restricted (str or None): mongo query string, which can let you restrict the documents set
-        bulk_size (int or None): when the parameter is None, the function will send `bulk_size` requests to mongo once
+        collection: The collection you want to drop duplicate content
+        keys: The keys which you consider should be unique in the collection
+        restricted: mongo query string, which can let you restrict the documents set
+        bulk_size: when the parameter is None, the function will send `bulk_size` requests to mongo once
 
-    For example:
+    Example:
         # suppose that you have a collection named exchange_information, which contain each stock's exchange information
         # they should have unique key (stock_id, date), then you can invoke the method like this:
         drop_mongo_duplicate(exchange_information, ('stock_id', 'date'))
@@ -23,7 +25,7 @@ def drop_mongo_duplicate(collection, keys, restricted=None, bulk_size=None):
 
         # if you want to drop duplicate date which is later than 2018-01-01
         drop_mongo_duplicate(exchange_information, ('stock_id', 'date'), {'date': {'$gt': datetime.datetime(2018, 1, 1)}}, bulk_size=1024)
-        """
+    """
     def _extract_condition(record):
         condition = {key: value for key, value in record['_id'].items()}
         unique_id = collection.find_one(condition, {'_id': 1})['_id']
