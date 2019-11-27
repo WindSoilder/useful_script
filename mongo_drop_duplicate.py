@@ -3,7 +3,7 @@ from pymongo import DeleteMany
 from pymongo.collection import Collection
 
 
-def drop_mongo_duplicate(
+def mongo_drop_duplicate(
     collection: Collection,
     keys: List[str],
     restricted: Optional[str] = None,
